@@ -1,0 +1,59 @@
+{
+	"id": "medium-001",
+	"difficulty": "medium",
+	"region": "top-left",
+	"player": "B",
+	"goal": "capture",
+	"target": ["A8", "B8", "C8", "C9"],
+	"description": "Black to kill the L-shaped white group. White has two outside liberties; remove one and follow up.",
+	"setup": {
+		"B": ["A9", "B9", "D9", "D8", "C7"],
+		"W": ["A8", "B8", "C8", "C9"]
+	},
+	"tree": {
+		"A7": {
+			"correct": true,
+			"comment": "Atari from the left. White is forced to extend.",
+			"reply": "B7",
+			"branches": {
+				"B6": {
+					"correct": true,
+					"comment": "Captures all five stones.",
+					"reply": null,
+					"branches": {}
+				},
+				"A6": {
+					"correct": false,
+					"comment": "Does not take a liberty. White lives by playing C6.",
+					"reply": "C6",
+					"branches": {}
+				}
+			}
+		},
+		"B7": {
+			"correct": true,
+			"comment": "Atari from below. White is forced to extend.",
+			"reply": "A7",
+			"branches": {
+				"A6": {
+					"correct": true,
+					"comment": "Captures all five stones.",
+					"reply": null,
+					"branches": {}
+				},
+				"B6": {
+					"correct": false,
+					"comment": "Does not take a liberty. White lives by extending again at A6.",
+					"reply": "A6",
+					"branches": {}
+				}
+			}
+		},
+		"D7": {
+			"correct": false,
+			"comment": "Doesn't reduce a liberty. White extends at A7 and gets two liberties - the kill becomes much harder.",
+			"reply": "A7",
+			"branches": {}
+		}
+	}
+}

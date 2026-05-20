@@ -1,0 +1,47 @@
+{
+	"id": "easy-002",
+	"difficulty": "easy",
+	"region": "bottom-left",
+	"player": "B",
+	"goal": "capture",
+	"target": ["A2", "B2"],
+	"description": "Black to play and capture the two white stones on the edge. Find the vital point.",
+	"setup": {
+		"B": ["A3", "B3", "C2"],
+		"W": ["A2", "B2"]
+	},
+	"tree": {
+		"B1": {
+			"correct": true,
+			"comment": "Vital point. White cannot extend to A1 (suicide) and any other move loses the group next turn.",
+			"reply": null,
+			"branches": {}
+		},
+		"A1": {
+			"correct": false,
+			"comment": "Slower. White extends at B1; you still need a follow-up.",
+			"reply": "B1",
+			"branches": {
+				"C1": {
+					"correct": true,
+					"comment": "Now the three white stones are captured.",
+					"reply": null,
+					"branches": {}
+				}
+			}
+		},
+		"C1": {
+			"correct": false,
+			"comment": "Slower. White extends at B1; you still need a follow-up.",
+			"reply": "B1",
+			"branches": {
+				"A1": {
+					"correct": true,
+					"comment": "Now the three white stones are captured.",
+					"reply": null,
+					"branches": {}
+				}
+			}
+		}
+	}
+}

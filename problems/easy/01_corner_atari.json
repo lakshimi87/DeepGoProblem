@@ -1,0 +1,39 @@
+{
+	"id": "easy-001",
+	"difficulty": "easy",
+	"region": "top-left",
+	"player": "B",
+	"goal": "capture",
+	"target": ["A9", "A8"],
+	"description": "Black to play and capture the two white stones in the corner.",
+	"setup": {
+		"B": ["B9", "B8"],
+		"W": ["A9", "A8"]
+	},
+	"tree": {
+		"A7": {
+			"correct": true,
+			"comment": "Direct capture. White has no liberties left.",
+			"reply": null,
+			"branches": {}
+		},
+		"B7": {
+			"correct": false,
+			"comment": "Inefficient. White extends at A7 and the kill is no longer a single move.",
+			"reply": "A7",
+			"branches": {}
+		},
+		"C9": {
+			"correct": false,
+			"comment": "Unrelated move. White escapes with A7.",
+			"reply": "A7",
+			"branches": {}
+		},
+		"C8": {
+			"correct": false,
+			"comment": "Unrelated move. White escapes with A7.",
+			"reply": "A7",
+			"branches": {}
+		}
+	}
+}
