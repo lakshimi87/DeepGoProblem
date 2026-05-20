@@ -1,0 +1,53 @@
+{
+	"id": "hard-001",
+	"difficulty": "hard",
+	"region": "top-left",
+	"player": "B",
+	"goal": "capture",
+	"target": ["A8", "B8", "C8", "D8", "D9"],
+	"description": "Black to kill. White has the shape of an L with one extra eye-stone. Find the throw-in that destroys both potential eyes, then follow up to capture.",
+	"setup": {
+		"B": ["A7", "B7", "C7", "D7", "E7", "E8"],
+		"W": ["A8", "B8", "C8", "D8", "D9"]
+	},
+	"tree": {
+		"B9": {
+			"correct": true,
+			"comment": "Vital point. The throw-in attacks both potential eyes (A9 and C9) at once.",
+			"reply": "A9",
+			"branches": {
+				"E9": {
+					"correct": true,
+					"comment": "Remove white's last outside liberty. White is forced to capture, but the resulting shape has only one eye.",
+					"reply": "C9",
+					"branches": {
+						"B9": {
+							"correct": true,
+							"comment": "Throw in again. White has only one eye and no outside liberties - the whole group is captured.",
+							"reply": null,
+							"branches": {}
+						}
+					}
+				}
+			}
+		},
+		"A9": {
+			"correct": false,
+			"comment": "Wrong direction. White captures with B9 and the resulting shape has clean eyes at A9 and C9.",
+			"reply": "B9",
+			"branches": {}
+		},
+		"C9": {
+			"correct": false,
+			"comment": "Wrong direction. White captures with B9 and the resulting shape has clean eyes at A9 and C9.",
+			"reply": "B9",
+			"branches": {}
+		},
+		"E9": {
+			"correct": false,
+			"comment": "Outside before inside fails - white plays the vital point B9 and lives with two clean eyes.",
+			"reply": "B9",
+			"branches": {}
+		}
+	}
+}
