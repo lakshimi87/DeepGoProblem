@@ -1,0 +1,39 @@
+{
+	"id": "easy-003",
+	"difficulty": "easy",
+	"region": "top-right",
+	"player": "B",
+	"goal": "capture",
+	"target": ["J9", "J8"],
+	"description": "Black to play and capture the two white stones in the top-right corner.",
+	"setup": {
+		"B": ["H9", "H8"],
+		"W": ["J9", "J8"]
+	},
+	"tree": {
+		"J7": {
+			"correct": true,
+			"comment": "Direct capture on the only liberty.",
+			"reply": null,
+			"branches": {}
+		},
+		"H7": {
+			"correct": false,
+			"comment": "Doesn't reduce white's liberty. White extends at J7 and lives.",
+			"reply": "J7",
+			"branches": {}
+		},
+		"G9": {
+			"correct": false,
+			"comment": "Unrelated move. White escapes with J7.",
+			"reply": "J7",
+			"branches": {}
+		},
+		"G8": {
+			"correct": false,
+			"comment": "Unrelated move. White escapes with J7.",
+			"reply": "J7",
+			"branches": {}
+		}
+	}
+}

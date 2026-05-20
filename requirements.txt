@@ -1,2 +1,3 @@
 numpy>=1.21
+pygame-ce>=2.4
 # torch is optional and only needed for ./train.sh — install with ./setup.sh --train

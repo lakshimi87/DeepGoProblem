@@ -16,7 +16,7 @@ fi
 pip install --upgrade pip >/dev/null
 
 echo "Installing base requirements ..."
-pip install numpy
+pip install numpy pygame-ce
 
 if [ "${1:-}" = "--train" ]; then
 	echo "Installing training requirements (torch) ..."

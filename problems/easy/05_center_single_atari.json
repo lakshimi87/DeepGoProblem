@@ -1,0 +1,39 @@
+{
+	"id": "easy-005",
+	"difficulty": "easy",
+	"region": "center",
+	"player": "B",
+	"goal": "capture",
+	"target": ["E5"],
+	"description": "Black to play and capture the lone white stone in the middle of the board.",
+	"setup": {
+		"B": ["D5", "E4", "F5"],
+		"W": ["E5"]
+	},
+	"tree": {
+		"E6": {
+			"correct": true,
+			"comment": "The last liberty is removed. White is captured.",
+			"reply": null,
+			"branches": {}
+		},
+		"D6": {
+			"correct": false,
+			"comment": "Doesn't fill the liberty. White runs out with E6.",
+			"reply": "E6",
+			"branches": {}
+		},
+		"F6": {
+			"correct": false,
+			"comment": "Doesn't fill the liberty. White runs out with E6.",
+			"reply": "E6",
+			"branches": {}
+		},
+		"E7": {
+			"correct": false,
+			"comment": "Too far. White escapes with E6.",
+			"reply": "E6",
+			"branches": {}
+		}
+	}
+}

@@ -3,7 +3,7 @@
 import sys
 
 
-USAGE = "usage: python -m src.main {play|train|solve} [args]"
+USAGE = "usage: python -m src.main {play|play-ui|train|solve} [args]"
 
 
 def main():
@@ -15,6 +15,10 @@ def main():
 	if cmd == "play":
 		from . import play
 		play.main(rest)
+		return 0
+	if cmd in ("play-ui", "play_ui", "ui"):
+		from . import ui_pygame
+		ui_pygame.main(rest)
 		return 0
 	if cmd == "train":
 		from . import train

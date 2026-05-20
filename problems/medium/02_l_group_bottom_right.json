@@ -1,0 +1,59 @@
+{
+	"id": "medium-002",
+	"difficulty": "medium",
+	"region": "bottom-right",
+	"player": "B",
+	"goal": "capture",
+	"target": ["J2", "H2", "G2", "G1"],
+	"description": "Black to kill the L-shaped white group in the bottom-right. Reduce a liberty, force the extension, then capture.",
+	"setup": {
+		"B": ["J1", "H1", "F1", "F2", "G3"],
+		"W": ["J2", "H2", "G2", "G1"]
+	},
+	"tree": {
+		"J3": {
+			"correct": true,
+			"comment": "Atari from the right. White is forced to extend.",
+			"reply": "H3",
+			"branches": {
+				"H4": {
+					"correct": true,
+					"comment": "Captures all five stones.",
+					"reply": null,
+					"branches": {}
+				},
+				"J4": {
+					"correct": false,
+					"comment": "Doesn't take a liberty. White lives by playing G4.",
+					"reply": "G4",
+					"branches": {}
+				}
+			}
+		},
+		"H3": {
+			"correct": true,
+			"comment": "Atari from above. White is forced to extend.",
+			"reply": "J3",
+			"branches": {
+				"J4": {
+					"correct": true,
+					"comment": "Captures all five stones.",
+					"reply": null,
+					"branches": {}
+				},
+				"H4": {
+					"correct": false,
+					"comment": "Doesn't take a liberty. White lives by extending again at J4.",
+					"reply": "J4",
+					"branches": {}
+				}
+			}
+		},
+		"F3": {
+			"correct": false,
+			"comment": "Doesn't reduce a liberty. White extends at J3 and gets two liberties - the kill becomes much harder.",
+			"reply": "J3",
+			"branches": {}
+		}
+	}
+}
