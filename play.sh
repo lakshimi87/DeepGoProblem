@@ -23,7 +23,7 @@ for arg in "$@"; do
 done
 
 if [ "$mode" = "cli" ]; then
-	exec python -m src.main play "${passthrough[@]}"
+	exec python -m src.main play ${passthrough[@]+"${passthrough[@]}"}
 fi
 
 if ! python -c "import pygame" 2>/dev/null; then
@@ -31,4 +31,4 @@ if ! python -c "import pygame" 2>/dev/null; then
 	exit 1
 fi
 
-exec python -m src.main play-ui "${passthrough[@]}"
+exec python -m src.main play-ui ${passthrough[@]+"${passthrough[@]}"}
