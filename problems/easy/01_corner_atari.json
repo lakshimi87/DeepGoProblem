@@ -4,35 +4,44 @@
 	"region": "top-left",
 	"player": "B",
 	"goal": "capture",
-	"target": ["A9", "A8"],
+	"target": [
+		"A19",
+		"A18"
+	],
 	"description": "Black to play and capture the two white stones in the corner.",
 	"setup": {
-		"B": ["B9", "B8"],
-		"W": ["A9", "A8"]
+		"B": [
+			"B19",
+			"B18"
+		],
+		"W": [
+			"A19",
+			"A18"
+		]
 	},
 	"tree": {
-		"A7": {
+		"A17": {
 			"correct": true,
 			"comment": "Direct capture. White has no liberties left.",
 			"reply": null,
 			"branches": {}
 		},
-		"B7": {
+		"B17": {
 			"correct": false,
-			"comment": "Inefficient. White extends at A7 and the kill is no longer a single move.",
-			"reply": "A7",
+			"comment": "Inefficient. White extends at A9 and the kill is no longer a single move.",
+			"reply": "A17",
 			"branches": {}
 		},
-		"C9": {
+		"C19": {
 			"correct": false,
-			"comment": "Unrelated move. White escapes with A7.",
-			"reply": "A7",
+			"comment": "Unrelated move. White escapes with A9.",
+			"reply": "A17",
 			"branches": {}
 		},
-		"C8": {
+		"C18": {
 			"correct": false,
-			"comment": "Unrelated move. White escapes with A7.",
-			"reply": "A7",
+			"comment": "Unrelated move. White escapes with A9.",
+			"reply": "A17",
 			"branches": {}
 		}
 	}

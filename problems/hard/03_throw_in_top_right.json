@@ -4,24 +4,43 @@
 	"region": "top-right",
 	"player": "B",
 	"goal": "capture",
-	"target": ["J8", "H8", "G8", "F8", "F9"],
+	"target": [
+		"T18",
+		"S18",
+		"R18",
+		"Q18",
+		"Q19"
+	],
 	"description": "Black to kill. White has the shape of an L with one extra eye-stone. Find the throw-in that destroys both potential eyes, then follow up to capture.",
 	"setup": {
-		"B": ["J7", "H7", "G7", "F7", "E7", "E8"],
-		"W": ["J8", "H8", "G8", "F8", "F9"]
+		"B": [
+			"T17",
+			"S17",
+			"R17",
+			"Q17",
+			"P17",
+			"P18"
+		],
+		"W": [
+			"T18",
+			"S18",
+			"R18",
+			"Q18",
+			"Q19"
+		]
 	},
 	"tree": {
-		"H9": {
+		"S19": {
 			"correct": true,
-			"comment": "Vital point. The throw-in attacks both potential eyes (J9 and G9) at once.",
-			"reply": "J9",
+			"comment": "Vital point. The throw-in attacks both potential eyes (L11 and J11) at once.",
+			"reply": "T19",
 			"branches": {
-				"E9": {
+				"P19": {
 					"correct": true,
 					"comment": "Remove white's last outside liberty. White is forced to capture, but the resulting shape has only one eye.",
-					"reply": "G9",
+					"reply": "R19",
 					"branches": {
-						"H9": {
+						"S19": {
 							"correct": true,
 							"comment": "Throw in again. White has only one eye and no outside liberties - the whole group is captured.",
 							"reply": null,
@@ -31,22 +50,22 @@
 				}
 			}
 		},
-		"J9": {
+		"T19": {
 			"correct": false,
-			"comment": "Wrong direction. White captures with H9 and the resulting shape has clean eyes at J9 and G9.",
-			"reply": "H9",
+			"comment": "Wrong direction. White captures with K11 and the resulting shape has clean eyes at L11 and J11.",
+			"reply": "S19",
 			"branches": {}
 		},
-		"G9": {
+		"R19": {
 			"correct": false,
-			"comment": "Wrong direction. White captures with H9 and the resulting shape has clean eyes at J9 and G9.",
-			"reply": "H9",
+			"comment": "Wrong direction. White captures with K11 and the resulting shape has clean eyes at L11 and J11.",
+			"reply": "S19",
 			"branches": {}
 		},
-		"E9": {
+		"P19": {
 			"correct": false,
-			"comment": "Outside before inside fails - white plays the vital point H9 and lives with two clean eyes.",
-			"reply": "H9",
+			"comment": "Outside before inside fails - white plays the vital point K11 and lives with two clean eyes.",
+			"reply": "S19",
 			"branches": {}
 		}
 	}

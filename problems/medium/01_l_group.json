@@ -4,55 +4,71 @@
 	"region": "top-left",
 	"player": "B",
 	"goal": "capture",
-	"target": ["A8", "B8", "C8", "C9"],
+	"target": [
+		"A18",
+		"B18",
+		"C18",
+		"C19"
+	],
 	"description": "Black to kill the L-shaped white group. White has two outside liberties; remove one and follow up.",
 	"setup": {
-		"B": ["A9", "B9", "D9", "D8", "C7"],
-		"W": ["A8", "B8", "C8", "C9"]
+		"B": [
+			"A19",
+			"B19",
+			"D19",
+			"D18",
+			"C17"
+		],
+		"W": [
+			"A18",
+			"B18",
+			"C18",
+			"C19"
+		]
 	},
 	"tree": {
-		"A7": {
+		"A17": {
 			"correct": true,
 			"comment": "Atari from the left. White is forced to extend.",
-			"reply": "B7",
+			"reply": "B17",
 			"branches": {
-				"B6": {
+				"B16": {
 					"correct": true,
 					"comment": "Captures all five stones.",
 					"reply": null,
 					"branches": {}
 				},
-				"A6": {
+				"A16": {
 					"correct": false,
-					"comment": "Does not take a liberty. White lives by playing C6.",
-					"reply": "C6",
+					"comment": "Does not take a liberty. White lives by playing C8.",
+					"reply": "C16",
 					"branches": {}
 				}
 			}
 		},
-		"B7": {
+		"B17": {
 			"correct": true,
 			"comment": "Atari from below. White is forced to extend.",
-			"reply": "A7",
+			"reply": "A17",
 			"branches": {
-				"A6": {
+				"A16": {
 					"correct": true,
 					"comment": "Captures all five stones.",
 					"reply": null,
 					"branches": {}
 				},
-				"B6": {
+				"B16": {
 					"correct": false,
-					"comment": "Does not take a liberty. White lives by extending again at A6.",
-					"reply": "A6",
+					"comment": "Does not take a liberty. White lives by extending again at A8.",
+					"reply": "A16",
 					"branches": {}
 				}
 			}
 		},
-		"D7": {
+		"D17": {
 			"correct": false,
-			"comment": "Doesn't reduce a liberty. White extends at A7 and gets two liberties - the kill becomes much harder.",
-			"reply": "A7",
+			"comment": "Doesn't reduce a liberty. White extends at A9 and gets two liberties - the kill becomes much harder.",
+			"reply": "A17",
 			"branches": {}
 		}
 	}

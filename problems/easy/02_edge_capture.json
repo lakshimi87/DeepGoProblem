@@ -4,11 +4,21 @@
 	"region": "bottom-left",
 	"player": "B",
 	"goal": "capture",
-	"target": ["A2", "B2"],
+	"target": [
+		"A2",
+		"B2"
+	],
 	"description": "Black to play and capture the two white stones on the edge. Find the vital point.",
 	"setup": {
-		"B": ["A3", "B3", "C2"],
-		"W": ["A2", "B2"]
+		"B": [
+			"A3",
+			"B3",
+			"C2"
+		],
+		"W": [
+			"A2",
+			"B2"
+		]
 	},
 	"tree": {
 		"B1": {

@@ -4,35 +4,43 @@
 	"region": "center",
 	"player": "B",
 	"goal": "capture",
-	"target": ["E5"],
+	"target": [
+		"K10"
+	],
 	"description": "Black to play and capture the lone white stone in the middle of the board.",
 	"setup": {
-		"B": ["D5", "E4", "F5"],
-		"W": ["E5"]
+		"B": [
+			"J10",
+			"K9",
+			"L10"
+		],
+		"W": [
+			"K10"
+		]
 	},
 	"tree": {
-		"E6": {
+		"K11": {
 			"correct": true,
 			"comment": "The last liberty is removed. White is captured.",
 			"reply": null,
 			"branches": {}
 		},
-		"D6": {
+		"J11": {
 			"correct": false,
-			"comment": "Doesn't fill the liberty. White runs out with E6.",
-			"reply": "E6",
+			"comment": "Doesn't fill the liberty. White runs out with F7.",
+			"reply": "K11",
 			"branches": {}
 		},
-		"F6": {
+		"L11": {
 			"correct": false,
-			"comment": "Doesn't fill the liberty. White runs out with E6.",
-			"reply": "E6",
+			"comment": "Doesn't fill the liberty. White runs out with F7.",
+			"reply": "K11",
 			"branches": {}
 		},
-		"E7": {
+		"K12": {
 			"correct": false,
-			"comment": "Too far. White escapes with E6.",
-			"reply": "E6",
+			"comment": "Too far. White escapes with F7.",
+			"reply": "K11",
 			"branches": {}
 		}
 	}

@@ -1,6 +1,6 @@
 """Pygame-ce interactive UI for tsumego play.
 
-Renders the 9x9 region view, accepts mouse clicks for moves, and walks the
+Renders the 11x11 region view, accepts mouse clicks for moves, and walks the
 problem's pre-stored response tree (same logic as src/play.py).
 """
 
@@ -72,7 +72,7 @@ def view_to_screen(view_r, view_c):
 
 
 def screen_to_view(x, y):
-	"""Mouse position -> (view_r, view_c) on the 9x9 grid, or None."""
+	"""Mouse position -> (view_r, view_c) on the 11x11 grid, or None."""
 	ox, oy = ORIGIN
 	col = round((x - ox) / CELL)
 	row = round((y - oy) / CELL)
@@ -169,10 +169,10 @@ def draw_board(screen, board, region, last_move=None, candidates=None, hover_xy=
 	# Candidate book-move markers
 	if candidates:
 		for coord in candidates:
-			try:
-				vr, vc = reg.parse_local(coord)
-			except Exception:
+			vw = reg.global_to_view(coord, region)
+			if vw is None:
 				continue
+			vr, vc = vw
 			cx, cy = view_to_screen(vr, vc)
 			pygame.draw.circle(screen, HIGHLIGHT, (cx, cy), 5, 1)
 
@@ -190,13 +190,12 @@ def draw_board(screen, board, region, last_move=None, candidates=None, hover_xy=
 
 	# Last-move marker
 	if last_move:
-		try:
-			vr, vc = reg.parse_local(last_move)
+		vw = reg.global_to_view(last_move, region)
+		if vw is not None:
+			vr, vc = vw
 			cx, cy = view_to_screen(vr, vc)
 			marker = (220, 60, 60)
 			pygame.draw.circle(screen, marker, (cx, cy), 5, 2)
-		except Exception:
-			pass
 
 	# Ghost stone on hover
 	if hover_xy is not None and hover_color is not None:
@@ -338,28 +337,32 @@ def play_screen(screen, clock, problem):
 				if hit is None:
 					continue
 				vr, vc = hit
-				coord = reg.format_local(vr, vc)
-				ok, _ = state["board"].play(off_r + vr, off_c + vc, player_color)
+				local_label = reg.format_local(vr, vc)
+				gr, gc = off_r + vr, off_c + vc
+				coord_global = reg.format_global(gr, gc)
+				ok, _ = state["board"].play(gr, gc, player_color)
 				if not ok:
-					status(f"{coord}: illegal (occupied, suicide, or ko).", BAD)
+					status(f"{local_label}: illegal (occupied, suicide, or ko).", BAD)
 					continue
-				state["last_move"] = coord
+				state["last_move"] = coord_global
 				branches = (state["node"].get("branches") or {})
-				if coord not in branches:
-					status(f"{coord}: off-book — add a branch in the JSON to handle this.", BAD)
+				if coord_global not in branches:
+					status(f"{local_label}: off-book — add a branch in the JSON to handle this.", BAD)
 					state["finished"] = True
 					continue
-				entry = branches[coord]
+				entry = branches[coord_global]
 				ok_flag = bool(entry.get("correct"))
 				mark = "OK" if ok_flag else "X "
-				status(f"{coord}: {mark} {entry.get('comment','')}", GOOD if ok_flag else BAD)
+				status(f"{local_label}: {mark} {entry.get('comment','')}", GOOD if ok_flag else BAD)
 				reply = entry.get("reply")
 				if reply:
-					rr, rc = reg.local_to_global(reply, region)
+					rr, rc = reg.parse_global(reply)
 					ok2, _ = state["board"].play(rr, rc, opp_color)
 					if ok2:
 						state["last_move"] = reply
-						status(f"Opponent plays {reply}.", MUTED)
+						vw = reg.global_to_view(reply, region)
+						reply_label = reg.format_local(*vw) if vw is not None else reply
+						status(f"Opponent plays {reply_label}.", MUTED)
 					else:
 						status(f"Stored reply {reply} is illegal — stopping.", BAD)
 						state["finished"] = True

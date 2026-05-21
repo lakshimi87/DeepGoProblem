@@ -50,7 +50,7 @@ class Problem:
 		for letter, coords in setup.items():
 			color = bd.color_from_letter(letter)
 			for coord in coords:
-				gr, gc = reg.local_to_global(coord, self.region)
+				gr, gc = reg.parse_global(coord)
 				b.place(gr, gc, color)
 		return b
 

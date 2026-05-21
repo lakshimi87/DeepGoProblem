@@ -4,11 +4,30 @@
 	"region": "bottom-left",
 	"player": "B",
 	"goal": "capture",
-	"target": ["A2", "B2", "C2", "D2", "D1"],
+	"target": [
+		"A2",
+		"B2",
+		"C2",
+		"D2",
+		"D1"
+	],
 	"description": "Black to kill. White has the shape of an L with one extra eye-stone. Find the throw-in that destroys both potential eyes, then follow up to capture.",
 	"setup": {
-		"B": ["A3", "B3", "C3", "D3", "E3", "E2"],
-		"W": ["A2", "B2", "C2", "D2", "D1"]
+		"B": [
+			"A3",
+			"B3",
+			"C3",
+			"D3",
+			"E3",
+			"E2"
+		],
+		"W": [
+			"A2",
+			"B2",
+			"C2",
+			"D2",
+			"D1"
+		]
 	},
 	"tree": {
 		"B1": {

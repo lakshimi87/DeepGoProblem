@@ -59,9 +59,12 @@ def choose_problem():
 		print("not a valid choice.")
 
 
-def apply_move(board, coord, color, region):
-	gr, gc = reg.local_to_global(coord, region)
-	return board.play(gr, gc, color)
+def _global_to_view_str(coord_global, region):
+	"""Display a global Go coord using the region's local view labels when possible."""
+	vw = reg.global_to_view(coord_global, region)
+	if vw is None:
+		return coord_global
+	return reg.format_local(*vw)
 
 
 def play_problem(problem):
@@ -94,39 +97,41 @@ def play_problem(problem):
 			print(f"  {problem.description}")
 			continue
 		if raw in ("pass", ""):
-			print("  pick a coordinate inside the 9x9 view or 'q' to quit.")
+			print("  pick a coordinate inside the 11x11 view or 'q' to quit.")
 			continue
 
 		try:
-			move = raw.upper()
-			reg.parse_local(move)
+			move_local = raw.upper()
+			gr, gc = reg.local_to_global(move_local, region)
 		except Exception as e:
 			print(f"  could not parse '{raw}': {e}")
 			continue
 
-		ok, _ = apply_move(board, move, player_color, region)
+		ok, _ = board.play(gr, gc, player_color)
 		if not ok:
 			print("  illegal move (occupied, suicide, or ko). try again.")
 			continue
 
+		move_global = reg.format_global(gr, gc)
 		branches = node.get("branches", {}) or {}
 		print(render_view(board, region))
-		if move not in branches:
+		if move_global not in branches:
 			print("\n  This move is not in the problem database - treated as off-book.")
 			print("  Likely incorrect or unexplored. Add a branch in the json to handle it.")
 			return
 
-		entry = branches[move]
+		entry = branches[move_global]
 		mark = "OK" if entry.get("correct") else "X "
 		print(f"\n  {mark} {entry.get('comment', '')}")
 
 		reply = entry.get("reply")
 		if reply:
-			ok2, _ = apply_move(board, reply, opp_color, region)
+			rr, rc = reg.parse_global(reply)
+			ok2, _ = board.play(rr, rc, opp_color)
 			if not ok2:
 				print(f"  warning: stored reply {reply} is illegal - stopping.")
 				return
-			print(f"\n  Opponent plays {reply}.")
+			print(f"\n  Opponent plays {_global_to_view_str(reply, region)}.")
 			print(render_view(board, region))
 
 		next_branches = entry.get("branches") or {}

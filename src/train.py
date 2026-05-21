@@ -28,7 +28,7 @@ def main(args):
 			continue
 		t = neural.board_to_tensor(p.initial_board(), p.region, p.player)
 		X.append(t)
-		Y.append(neural.move_to_index(correct[0]))
+		Y.append(neural.move_to_index(correct[0], p.region))
 
 	if not X:
 		print("no problems with a labelled correct first move. nothing to train.")

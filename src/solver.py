@@ -121,7 +121,7 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, maximiz
 
 def solve(problem, depth=6):
 	board = problem.initial_board()
-	target_globals = [reg.local_to_global(t, problem.region) for t in problem.target]
+	target_globals = [reg.parse_global(t) for t in problem.target]
 	score, move = alphabeta(board, problem.player, problem, target_globals,
 		depth, -INF, INF, True)
 	if move is None:

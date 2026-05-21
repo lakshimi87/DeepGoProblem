@@ -4,35 +4,44 @@
 	"region": "top-right",
 	"player": "B",
 	"goal": "capture",
-	"target": ["J9", "J8"],
+	"target": [
+		"T19",
+		"T18"
+	],
 	"description": "Black to play and capture the two white stones in the top-right corner.",
 	"setup": {
-		"B": ["H9", "H8"],
-		"W": ["J9", "J8"]
+		"B": [
+			"S19",
+			"S18"
+		],
+		"W": [
+			"T19",
+			"T18"
+		]
 	},
 	"tree": {
-		"J7": {
+		"T17": {
 			"correct": true,
 			"comment": "Direct capture on the only liberty.",
 			"reply": null,
 			"branches": {}
 		},
-		"H7": {
+		"S17": {
 			"correct": false,
-			"comment": "Doesn't reduce white's liberty. White extends at J7 and lives.",
-			"reply": "J7",
+			"comment": "Doesn't reduce white's liberty. White extends at L9 and lives.",
+			"reply": "T17",
 			"branches": {}
 		},
-		"G9": {
+		"R19": {
 			"correct": false,
-			"comment": "Unrelated move. White escapes with J7.",
-			"reply": "J7",
+			"comment": "Unrelated move. White escapes with L9.",
+			"reply": "T17",
 			"branches": {}
 		},
-		"G8": {
+		"R18": {
 			"correct": false,
-			"comment": "Unrelated move. White escapes with J7.",
-			"reply": "J7",
+			"comment": "Unrelated move. White escapes with L9.",
+			"reply": "T17",
 			"branches": {}
 		}
 	}

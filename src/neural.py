@@ -1,4 +1,4 @@
-"""Policy CNN over the 9x9 region. Torch is imported lazily so importing this
+"""Policy CNN over the 11x11 region. Torch is imported lazily so importing this
 module does not require torch to be installed.
 """
 
@@ -35,7 +35,7 @@ def build_model(channels=32):
 
 
 def board_to_tensor(board, region, player_color):
-	"""Encode the 9x9 region as a (3, 9, 9) tensor: own / opp / board-edge mask."""
+	"""Encode the 11x11 region as a (3, 11, 11) tensor: own / opp / board-edge mask."""
 	torch, _ = _torch()
 	import numpy as np
 
@@ -64,11 +64,17 @@ def board_to_tensor(board, region, player_color):
 	return torch.from_numpy(np.stack([own, opp, edge], axis=0))
 
 
-def move_to_index(coord):
-	r, c = reg.parse_local(coord)
+def move_to_index(coord, region):
+	"""Global Go coord -> flat view-cell index for the CNN policy head."""
+	vw = reg.global_to_view(coord, region)
+	if vw is None:
+		raise ValueError(f"coord {coord} outside region {region}")
+	r, c = vw
 	return r * reg.VIEW + c
 
 
-def index_to_move(idx):
+def index_to_move(idx, region):
+	"""Flat view-cell index -> global Go coord."""
 	r, c = divmod(idx, reg.VIEW)
-	return reg.format_local(r, c)
+	off_r, off_c = reg.REGIONS[region]
+	return reg.format_global(off_r + r, off_c + c)
