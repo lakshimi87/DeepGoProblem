@@ -117,13 +117,25 @@ stones the goal applies to. The solver uses these when verifying a problem.
 ## Adding problems
 
 Drop a new json file into the right `problems/<difficulty>/` folder. The id
-should be unique. `play.sh` will pick it up automatically.
+should be unique. `play.sh` will pick it up automatically. The `tree` field
+can be left as `{}` — the solver can populate it for you.
 
-Once a policy network is trained, the solver
+### Auto-populating the response tree
 
-	python -m src.main solve <problem-id>
+	python -m src.main build-tree <problem-id> [--depth N] [--plies N] [--force]
 
-can suggest additional branches when extending a tree.
+This runs the solver as both attacker and defender, then writes the resulting
+principal variation back into the problem's JSON. The solver proves wins for
+easy / medium tsumego and most hard ones that resolve within `--depth` plies.
+If it cannot prove the position within the depth budget, it writes a single
+heuristic first-move suggestion with a `Solver: unresolved within depth …`
+note — extend the tree manually in the editor UI from there.
+
+### Probing a single position
+
+	python -m src.main solve <problem-id> [--depth N]
+
+Prints the solver's best move and verdict (proven win / proven loss / unknown).
 
 ## Difficulty levels
 

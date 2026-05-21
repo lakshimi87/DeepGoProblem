@@ -3,7 +3,7 @@
 import sys
 
 
-USAGE = "usage: python -m src.main {play|play-ui|train|solve} [args]"
+USAGE = "usage: python -m src.main {play|play-ui|train|solve|build-tree} [args]"
 
 
 def main():
@@ -27,6 +27,10 @@ def main():
 	if cmd == "solve":
 		from . import solver
 		solver.main(rest)
+		return 0
+	if cmd in ("build-tree", "build_tree", "build"):
+		from . import builder
+		builder.main(rest)
 		return 0
 	print(f"unknown command: {cmd}")
 	print(USAGE)

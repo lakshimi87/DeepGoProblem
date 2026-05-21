@@ -638,8 +638,8 @@ def _explore_step(data, state, coord_global, log):
 		P = _problem_view(data)
 		target_globals = [reg.parse_global(t) for t in data.get("target", [])]
 		score, reply_move = solver.alphabeta(
-			test, opp, P, target_globals, 4,
-			-solver.INF, solver.INF, False,
+			test, opp, P, target_globals, 6,
+			-solver.INF, solver.INF,
 		)
 		correct = (score == 1)
 		reply_global = None
