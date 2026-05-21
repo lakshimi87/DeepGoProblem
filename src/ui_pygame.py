@@ -883,7 +883,7 @@ def editor_screen(screen, clock, problem=None):
 		goal_btn.label = data.get("goal", "capture")
 		for btn, name in tool_buttons:
 			marker = "* " if state["tool"] == name else "  "
-			btn.label = marker + dict(tools_list)[name]
+			btn.label = marker + {n: l for l, n in tools_list}[name]
 
 		screen.fill(SIDEBAR_BG)
 		pygame.draw.rect(screen, BG, (0, 0, SIDEBAR_X, WINDOW_H))
