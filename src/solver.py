@@ -18,8 +18,93 @@ from . import database
 
 
 INF = 10 ** 9
-DEFAULT_DEPTH = 12
+DEFAULT_DEPTH = 18
 DEFAULT_EYE_DIST = 3
+
+# Module-level cache for the trained policy network. `_POLICY` is one of:
+#   * None       -- not yet attempted (lazy)
+#   * False      -- attempted, unavailable (no torch / no checkpoint / load failed)
+#   * model      -- a loaded torch.nn.Module in eval mode
+_POLICY = None
+
+# Cache of {(board_key, color, region_name): {(r,c): prob}} so each unique
+# position runs the CNN once instead of once per visit during alpha-beta. The
+# CNN forward dominates wall time without this; capped to keep memory bounded.
+_POLICY_CACHE = {}
+_POLICY_CACHE_MAX = 200_000
+
+# Soft cap on alpha-beta transposition-table size. Deep searches were observed
+# to grow the TT past 10 GB on hard problems; when we exceed this we drop the
+# table and keep searching. Losing memoization is preferable to OOM.
+_TT_MAX = 2_000_000
+
+
+def _load_policy():
+	"""Load and cache models/policy.pt. Returns the model or None if unavailable."""
+	global _POLICY
+	if _POLICY is False:
+		return None
+	if _POLICY is not None:
+		return _POLICY
+	try:
+		import torch
+	except ImportError:
+		_POLICY = False
+		return None
+	from pathlib import Path
+	ckpt = Path(__file__).resolve().parent.parent / "models" / "policy.pt"
+	if not ckpt.exists():
+		_POLICY = False
+		return None
+	try:
+		from . import neural
+		model = neural.build_model()
+		state = torch.load(ckpt, map_location="cpu", weights_only=True)
+		model.load_state_dict(state)
+		model.eval()
+	except Exception:
+		_POLICY = False
+		return None
+	_POLICY = model
+	return model
+
+
+def policy_score_map(board, color, region):
+	"""Return {(r, c): prob} over the 11x11 view, or {} if the policy is unavailable.
+
+	The CNN was trained from the problem's player perspective ('own' vs 'opp').
+	When evaluating moves for a different side-to-move (the defender), we flip
+	the perspective by passing `color` as the player_color — that way 'own'
+	always means the side about to play.
+
+	Results are memoized per (position, color, region); the cache is dropped
+	wholesale when it exceeds _POLICY_CACHE_MAX entries.
+	"""
+	model = _load_policy()
+	if model is None:
+		return {}
+	cache_key = (board_key(board, region), color, region)
+	cached = _POLICY_CACHE.get(cache_key)
+	if cached is not None:
+		return cached
+	try:
+		import torch
+		from . import neural
+	except ImportError:
+		return {}
+	with torch.no_grad():
+		t = neural.board_to_tensor(board, region, color).unsqueeze(0)
+		logits = model(t)[0]
+		probs = torch.softmax(logits, dim=-1).tolist()
+	out = {}
+	for idx, p in enumerate(probs):
+		coord = neural.index_to_move(idx, region)
+		gr, gc = reg.parse_global(coord)
+		out[(gr, gc)] = p
+	if len(_POLICY_CACHE) >= _POLICY_CACHE_MAX:
+		_POLICY_CACHE.clear()
+	_POLICY_CACHE[cache_key] = out
+	return out
 
 
 def target_color(problem):
@@ -175,10 +260,14 @@ def target_total_libs(board, target_globals, tcolor):
 	return len(libs)
 
 
-def order_moves(board, moves, color, target_globals, tcolor, pv_first=None):
-	"""Move ordering: PV move first (if given), then attacker prefers
-	liberty-reducing & capturing moves; defender prefers liberty-extending."""
+def order_moves(board, moves, color, target_globals, tcolor, region_name, pv_first=None, policy=None):
+	"""Move ordering: PV move first (if given), policy-net prior next, then
+	attacker prefers liberty-reducing & capturing moves; defender prefers
+	liberty-extending. `policy` is an optional {(r,c): prob} prior; if None, we
+	look one up from the trained checkpoint."""
 	attacker = (color != tcolor)
+	if policy is None:
+		policy = policy_score_map(board, color, region_name)
 	scored = []
 	for r, c in moves:
 		b2 = board.copy()
@@ -188,6 +277,11 @@ def order_moves(board, moves, color, target_globals, tcolor, pv_first=None):
 			score = -libs * 10 + captured * 5
 		else:
 			score = libs * 10 + captured * 5
+		# Policy prior is a probability in [0, 1]; scale so it nudges ordering
+		# among tactically-similar moves but cannot override a clear liberty
+		# differential.
+		prior = policy.get((r, c), 0.0)
+		score += prior * 30
 		if pv_first is not None and (r, c) == pv_first:
 			score += 10 ** 6
 		scored.append((score, (r, c)))
@@ -212,6 +306,11 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 
 	maximizing = (color == problem.player)
 
+	# Soft cap: if the TT is enormous, drop it. We'd rather lose memoization
+	# than swap to disk or get OOM-killed on a long solve.
+	if len(tt) >= _TT_MAX:
+		tt.clear()
+
 	key = (board_key(board, problem.region), color, depth)
 	if key in tt:
 		return tt[key]
@@ -233,7 +332,7 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 		if pv_entry and pv_entry[1] is not None:
 			pv_hint = pv_entry[1]
 			break
-	moves = order_moves(board, moves, color, target_globals, tcolor, pv_first=pv_hint)
+	moves = order_moves(board, moves, color, target_globals, tcolor, problem.region, pv_first=pv_hint)
 	best_move = None
 	if maximizing:
 		best = -INF

@@ -52,10 +52,45 @@
 	},
 	"tree": {
 		"F1": {
-			"correct": false,
-			"comment": "Solver: unresolved within depth — extend the tree manually.",
-			"reply": null,
-			"branches": {}
+			"correct": true,
+			"comment": "Solver: player achieves goal.",
+			"reply": "F4",
+			"branches": {
+				"E3": {
+					"correct": true,
+					"comment": "Solver: player achieves goal.",
+					"reply": "D4",
+					"branches": {
+						"D5": {
+							"correct": true,
+							"comment": "Solver: player achieves goal.",
+							"reply": "E6",
+							"branches": {
+								"H4": {
+									"correct": true,
+									"comment": "Solver: player achieves goal.",
+									"reply": "F5",
+									"branches": {
+										"F6": {
+											"correct": true,
+											"comment": "Solver: player achieves goal.",
+											"reply": "G4",
+											"branches": {
+												"F2": {
+													"correct": true,
+													"comment": "Captures target.",
+													"reply": null,
+													"branches": {}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

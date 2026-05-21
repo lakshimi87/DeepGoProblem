@@ -15,8 +15,29 @@ from . import database
 from . import solver
 
 
-DEFAULT_SOLVE_DEPTH = 8
-DEFAULT_MAX_PLIES = 12
+DEFAULT_SOLVE_DEPTH = 14
+DEFAULT_MAX_PLIES = 20
+
+
+def _iterative_solve(board, color, problem, target_globals, tcolor, max_depth, verbose, label):
+	"""Iterative deepening from depth 2 up to max_depth, returning the deepest
+	(score, move) reached. Sharing one tt across iterations lets the PV from
+	the shallower search prime move ordering for the deeper one."""
+	tt = {}
+	best_score, best_move = 0, None
+	for d in range(2, max_depth + 1, 2):
+		score, move = solver.alphabeta(
+			board, color, problem, target_globals,
+			d, -solver.INF, solver.INF, tt=tt, tcolor=tcolor,
+		)
+		if move is not None:
+			best_score, best_move = score, move
+		if verbose:
+			mv_str = reg.format_global(*move) if move else "(none)"
+			print(f"    {label} depth={d}: {mv_str} score={score}", flush=True)
+		if score in (1, -1):
+			break
+	return best_score, best_move
 
 
 def _terminal_verdict(score):
@@ -27,36 +48,44 @@ def _terminal_verdict(score):
 	return "Solver: unresolved within depth — extend the tree manually."
 
 
-def build_tree(problem, solve_depth=DEFAULT_SOLVE_DEPTH, max_plies=DEFAULT_MAX_PLIES, verbose=False):
-	"""Returns a fresh tree dict. Does NOT mutate problem.data."""
+def build_tree(problem, solve_depth=DEFAULT_SOLVE_DEPTH, max_plies=DEFAULT_MAX_PLIES,
+		verbose=False, save_cb=None):
+	"""Mutates and returns a tree dict built top-down. `save_cb(root)` is called
+	after each meaningful update so a long run can be killed without losing
+	partial progress. Does NOT mutate problem.data directly."""
 	board = problem.initial_board()
 	player_color = problem.player
 	opp_color = bd.opponent(player_color)
 	tcolor = solver.target_color(problem)
 	target_globals = [reg.parse_global(t) for t in problem.target]
-	tt = {}
-	return _build_node(
-		board, player_color, opp_color,
+	root = {}
+	noop = lambda r: None
+	_build_node(
+		root, board, player_color, opp_color,
 		problem, target_globals, tcolor,
-		solve_depth, max_plies, tt, verbose, ply=1,
+		solve_depth, max_plies, verbose, ply=1,
+		save_cb=save_cb or noop, root=root,
 	)
+	return root
 
 
-def _build_node(board, player_color, opp_color, problem, target_globals, tcolor,
-		solve_depth, plies_left, tt, verbose, ply):
+def _build_node(branches, board, player_color, opp_color, problem, target_globals,
+		tcolor, solve_depth, plies_left, verbose, ply, save_cb, root):
 	if plies_left <= 0:
-		return {}
+		return
 
 	cur_eval = solver.evaluate(board, problem, target_globals, tcolor)
 	if cur_eval != 0:
-		return {}
+		return
 
-	score, best_move_xy = solver.alphabeta(
-		board, player_color, problem, target_globals,
-		solve_depth, -solver.INF, solver.INF, tt={}, tcolor=tcolor,
+	if verbose:
+		print(f"  ply {ply}: solving attacker ({bd.letter_from_color(player_color)})", flush=True)
+	score, best_move_xy = _iterative_solve(
+		board, player_color, problem, target_globals, tcolor,
+		solve_depth, verbose, label=f"ply{ply}-att",
 	)
 	if best_move_xy is None:
-		return {}
+		return
 
 	best_move = reg.format_global(*best_move_xy)
 	correct = (score == 1)
@@ -64,40 +93,38 @@ def _build_node(board, player_color, opp_color, problem, target_globals, tcolor,
 	b1 = board.copy()
 	ok, _ = b1.play(best_move_xy[0], best_move_xy[1], player_color)
 	if not ok:
-		return {}
+		return
 
 	if verbose:
-		print(f"  ply {ply}: player {bd.letter_from_color(player_color)} -> {best_move} (score={score})")
+		print(f"  ply {ply}: player {bd.letter_from_color(player_color)} -> {best_move} (score={score})", flush=True)
+
+	node = {
+		"correct": correct,
+		"comment": _terminal_verdict(score),
+		"reply": None,
+		"branches": {},
+	}
+	branches[best_move] = node
+	save_cb(root)
 
 	# If the solver could not prove a win, record the suggestion but do not
 	# fabricate a continuation — the rest of the line would be heuristic.
 	if score != 1:
-		return {best_move: {
-			"correct": correct,
-			"comment": _terminal_verdict(score),
-			"reply": None,
-			"branches": {},
-		}}
+		return
 
 	post_attack_eval = solver.evaluate(b1, problem, target_globals, tcolor)
 	if post_attack_eval == 1:
-		return {best_move: {
-			"correct": True,
-			"comment": "Captures target." if problem.goal == "capture" else "Group lives.",
-			"reply": None,
-			"branches": {},
-		}}
+		node["comment"] = "Captures target." if problem.goal == "capture" else "Group lives."
+		save_cb(root)
+		return
 	if post_attack_eval == -1:
-		return {best_move: {
-			"correct": False,
-			"comment": _terminal_verdict(score),
-			"reply": None,
-			"branches": {},
-		}}
+		return
 
-	reply_score, reply_move_xy = solver.alphabeta(
-		b1, opp_color, problem, target_globals,
-		solve_depth, -solver.INF, solver.INF, tt={}, tcolor=tcolor,
+	if verbose:
+		print(f"  ply {ply}: solving defender ({bd.letter_from_color(opp_color)})", flush=True)
+	reply_score, reply_move_xy = _iterative_solve(
+		b1, opp_color, problem, target_globals, tcolor,
+		solve_depth, verbose, label=f"ply{ply}-def",
 	)
 	reply_global = None
 	b2 = b1.copy()
@@ -105,31 +132,21 @@ def _build_node(board, player_color, opp_color, problem, target_globals, tcolor,
 		ok, _ = b2.play(reply_move_xy[0], reply_move_xy[1], opp_color)
 		if ok:
 			reply_global = reg.format_global(*reply_move_xy)
-		else:
-			reply_global = None
 
 	if verbose and reply_global:
-		print(f"  ply {ply}: opp   {bd.letter_from_color(opp_color)} -> {reply_global} (score={reply_score})")
+		print(f"  ply {ply}: opp   {bd.letter_from_color(opp_color)} -> {reply_global} (score={reply_score})", flush=True)
+
+	node["reply"] = reply_global
+	save_cb(root)
 
 	post_reply_eval = solver.evaluate(b2, problem, target_globals, tcolor)
 	if post_reply_eval != 0 or reply_global is None:
-		return {best_move: {
-			"correct": correct,
-			"comment": _terminal_verdict(score),
-			"reply": reply_global,
-			"branches": {},
-		}}
+		return
 
-	child = _build_node(
-		b2, player_color, opp_color, problem, target_globals, tcolor,
-		solve_depth, plies_left - 1, tt, verbose, ply + 1,
+	_build_node(
+		node["branches"], b2, player_color, opp_color, problem, target_globals, tcolor,
+		solve_depth, plies_left - 1, verbose, ply + 1, save_cb, root,
 	)
-	return {best_move: {
-		"correct": correct,
-		"comment": _terminal_verdict(score),
-		"reply": reply_global,
-		"branches": child,
-	}}
 
 
 def main(args):
@@ -164,7 +181,12 @@ def main(args):
 		return
 
 	print(f"building tree for {pid} (solve_depth={depth}, max_plies={plies})...")
-	tree = build_tree(problem, solve_depth=depth, max_plies=plies, verbose=verbose)
+
+	def save_cb(root):
+		problem.data["tree"] = root
+		problem.save()
+
+	tree = build_tree(problem, solve_depth=depth, max_plies=plies, verbose=verbose, save_cb=save_cb)
 	problem.data["tree"] = tree
 	problem.save()
 	n = _count_nodes(tree)
