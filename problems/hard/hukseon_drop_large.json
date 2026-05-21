@@ -50,5 +50,12 @@
 			"F3"
 		]
 	},
-	"tree": {}
+	"tree": {
+		"F1": {
+			"correct": false,
+			"comment": "Solver: unresolved within depth — extend the tree manually.",
+			"reply": null,
+			"branches": {}
+		}
+	}
 }
