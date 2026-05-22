@@ -16,9 +16,10 @@ def main(args):
 
 	from . import neural
 
-	epochs = 200
+	epochs = 100
 	if "--epochs" in args:
 		epochs = int(args[args.index("--epochs") + 1])
+	reset = "--reset" in args
 
 	problems = database.list_problems()
 	X, Y = [], []
@@ -37,7 +38,14 @@ def main(args):
 	X = torch.stack(X)
 	Y = torch.tensor(Y, dtype=torch.long)
 
+	out = Path(__file__).resolve().parent.parent / "models" / "policy.pt"
+
 	model = neural.build_model()
+	if not reset and out.exists():
+		model.load_state_dict(torch.load(out, map_location="cpu"))
+		print(f"resuming from {out}")
+	else:
+		print("starting from a freshly initialised model")
 	opt = optim.Adam(model.parameters(), lr=1e-3)
 	loss_fn = nn.CrossEntropyLoss()
 
@@ -53,7 +61,6 @@ def main(args):
 			acc = (logits.argmax(-1) == Y).float().mean().item()
 			print(f"  epoch {epoch+1:4d}   loss={loss.item():.4f}   acc={acc*100:5.1f}%")
 
-	out = Path(__file__).resolve().parent.parent / "models" / "policy.pt"
 	out.parent.mkdir(exist_ok=True)
 	torch.save(model.state_dict(), out)
 	print(f"saved {out}")
