@@ -167,8 +167,15 @@ def eye_space(board, target_globals, tcolor, region_name, max_empty_dist=DEFAULT
 	return empties
 
 
-def candidate_moves(board, color, target_globals, tcolor, region_name):
-	cells = eye_space(board, target_globals, tcolor, region_name)
+def candidate_moves(board, color, target_globals, tcolor, region_name, allowed_globals=None):
+	"""When `allowed_globals` is provided (frozenset of (r,c)), it REPLACES the
+	eye-space heuristic — only those positions are considered (modulo legality).
+	This applies to both sides, so the user must list every point that matters
+	in any variation, or the solver may declare an unreachable win/loss."""
+	if allowed_globals is not None:
+		cells = allowed_globals
+	else:
+		cells = eye_space(board, target_globals, tcolor, region_name)
 	moves = []
 	for r, c in cells:
 		b2 = board.copy()
@@ -176,6 +183,16 @@ def candidate_moves(board, color, target_globals, tcolor, region_name):
 		if ok:
 			moves.append((r, c))
 	return moves
+
+
+_ALLOWED_UNSET = object()
+
+
+def _derive_allowed(problem):
+	moves = getattr(problem, "allowed_moves", None) or []
+	if not moves:
+		return None
+	return frozenset(reg.parse_global(m) for m in moves)
 
 
 def group_eye_count(board, stones, color):
@@ -297,12 +314,20 @@ def board_key(board, region_name):
 	)
 
 
-def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None, tcolor=None):
-	"""Returns (score, best_move) with score from `problem.player`'s view (+1 = goal achieved)."""
+def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None, tcolor=None,
+		allowed_globals=_ALLOWED_UNSET):
+	"""Returns (score, best_move) with score from `problem.player`'s view (+1 = goal achieved).
+
+	`allowed_globals` (frozenset of (r,c) | None): if a frozenset, both sides may
+	only play there. None means no restriction. The default sentinel derives the
+	value from `problem.allowed_moves` once at the top of the call chain, then
+	passes through recursion so we don't re-parse on every node."""
 	if tt is None:
 		tt = {}
 	if tcolor is None:
 		tcolor = target_color(problem)
+	if allowed_globals is _ALLOWED_UNSET:
+		allowed_globals = _derive_allowed(problem)
 
 	maximizing = (color == problem.player)
 
@@ -320,7 +345,7 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 		tt[key] = (val, None)
 		return val, None
 
-	moves = candidate_moves(board, color, target_globals, tcolor, problem.region)
+	moves = candidate_moves(board, color, target_globals, tcolor, problem.region, allowed_globals)
 	if not moves:
 		tt[key] = (val, None)
 		return val, None
@@ -340,7 +365,7 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 			b2 = board.copy()
 			b2.play(r, c, color)
 			score, _ = alphabeta(b2, bd.opponent(color), problem, target_globals,
-				depth - 1, alpha, beta, tt, tcolor)
+				depth - 1, alpha, beta, tt, tcolor, allowed_globals)
 			if score > best:
 				best, best_move = score, (r, c)
 			alpha = max(alpha, best)
@@ -354,7 +379,7 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 			b2 = board.copy()
 			b2.play(r, c, color)
 			score, _ = alphabeta(b2, bd.opponent(color), problem, target_globals,
-				depth - 1, alpha, beta, tt, tcolor)
+				depth - 1, alpha, beta, tt, tcolor, allowed_globals)
 			if score < best:
 				best, best_move = score, (r, c)
 			beta = min(beta, best)

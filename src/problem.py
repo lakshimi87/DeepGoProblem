@@ -41,6 +41,12 @@ class Problem:
 		return self.data.get("target", [])
 
 	@property
+	def allowed_moves(self):
+		"""Optional list of global coords restricting where ANY side may play.
+		Empty list (the default) means no restriction — solver uses full eye-space."""
+		return self.data.get("allowed_moves", [])
+
+	@property
 	def tree(self):
 		return self.data.get("tree", {})
 

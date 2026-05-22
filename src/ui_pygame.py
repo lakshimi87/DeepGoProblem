@@ -548,6 +548,7 @@ def _new_problem_data():
 		"player": "B",
 		"goal": "capture",
 		"target": [],
+		"allowed_moves": [],
 		"description": "",
 		"setup": {"B": [], "W": []},
 		"tree": {},
@@ -568,7 +569,7 @@ def _board_from_setup(data):
 
 
 class _ProblemView:
-	__slots__ = ("player", "region", "goal", "target")
+	__slots__ = ("player", "region", "goal", "target", "allowed_moves")
 
 
 def _problem_view(data):
@@ -577,6 +578,7 @@ def _problem_view(data):
 	p.region = data["region"]
 	p.goal = data.get("goal", "capture")
 	p.target = list(data.get("target", []))
+	p.allowed_moves = list(data.get("allowed_moves", []))
 	return p
 
 
@@ -690,6 +692,7 @@ def editor_screen(screen, clock, problem=None):
 		data["setup"].setdefault("B", [])
 		data["setup"].setdefault("W", [])
 		data.setdefault("target", [])
+		data.setdefault("allowed_moves", [])
 		data.setdefault("tree", {})
 		data.setdefault("description", "")
 		data.setdefault("goal", "capture")
@@ -814,17 +817,17 @@ def editor_screen(screen, clock, problem=None):
 	meta_buttons = [diff_btn, region_btn, player_btn, goal_btn]
 
 	tools_list = [
-		("B", "setup_B"),
-		("W", "setup_W"),
-		("Erase", "erase"),
-		("Target", "target"),
-		("Explore", "explore"),
+		("B", "setup_B", 38),
+		("W", "setup_W", 38),
+		("Erase", "erase", 58),
+		("Target", "target", 60),
+		("Allowed", "allowed", 70),
+		("Explore", "explore", 70),
 	]
 	tool_y = 282
 	tool_buttons = []
 	bx = sx
-	for label, name in tools_list:
-		w = 52 if name not in ("Target", "explore") else (66 if name == "target" else 78)
+	for label, name, w in tools_list:
 		btn = Button(label, (bx, tool_y, w, 28), lambda n=name: select_tool(n))
 		tool_buttons.append((btn, name))
 		bx += w + 4
@@ -853,7 +856,8 @@ def editor_screen(screen, clock, problem=None):
 					pygame.K_2: "setup_W",
 					pygame.K_3: "erase",
 					pygame.K_4: "target",
-					pygame.K_5: "explore",
+					pygame.K_5: "allowed",
+					pygame.K_6: "explore",
 				}
 				if event.key in key_map:
 					select_tool(key_map[event.key])
@@ -883,7 +887,7 @@ def editor_screen(screen, clock, problem=None):
 		goal_btn.label = data.get("goal", "capture")
 		for btn, name in tool_buttons:
 			marker = "* " if state["tool"] == name else "  "
-			btn.label = marker + {n: l for l, n in tools_list}[name]
+			btn.label = marker + {n: l for l, n, _ in tools_list}[name]
 
 		screen.fill(SIDEBAR_BG)
 		pygame.draw.rect(screen, BG, (0, 0, SIDEBAR_X, WINDOW_H))
@@ -912,6 +916,8 @@ def editor_screen(screen, clock, problem=None):
 			last_move = state["explore_last_move"]
 		elif state["tool"] == "target":
 			candidates = list(data.get("target", []))
+		elif state["tool"] == "allowed":
+			candidates = list(data.get("allowed_moves", []))
 
 		draw_board(screen, board_to_show, data["region"],
 			last_move=last_move,
@@ -934,7 +940,7 @@ def editor_screen(screen, clock, problem=None):
 		render_text(screen, "Description:", (sx, 178), size=13, bold=True)
 		desc_input.draw(screen)
 
-		render_text(screen, "Tools (1-5):", (sx, tool_y - 18), size=13, bold=True)
+		render_text(screen, "Tools (1-6):", (sx, tool_y - 18), size=13, bold=True)
 		for btn, _ in tool_buttons:
 			btn.draw(screen)
 
@@ -944,6 +950,11 @@ def editor_screen(screen, clock, problem=None):
 		if state["tool"] == "target":
 			tgt = ", ".join(data.get("target", [])) or "(none)"
 			for line in wrap_text(f"Target: {tgt}", sidebar_w, 12):
+				render_text(screen, line, (sx, info_y), size=12)
+				info_y += 16
+		if state["tool"] == "allowed":
+			al = ", ".join(data.get("allowed_moves", [])) or "(none — full eye-space)"
+			for line in wrap_text(f"Allowed: {al}", sidebar_w, 12):
 				render_text(screen, line, (sx, info_y), size=12)
 				info_y += 16
 		if state["tool"] == "explore":
@@ -1012,6 +1023,13 @@ def _handle_editor_click(data, state, coord_global, log):
 			tgt.remove(coord_global)
 		else:
 			tgt.append(coord_global)
+		return
+	if tool == "allowed":
+		al = data.setdefault("allowed_moves", [])
+		if coord_global in al:
+			al.remove(coord_global)
+		else:
+			al.append(coord_global)
 		return
 	if tool == "explore":
 		_explore_step(data, state, coord_global, log)
