@@ -389,6 +389,46 @@ def alphabeta(board, color, problem, target_globals, depth, alpha, beta, tt=None
 		return best, best_move
 
 
+def best_move(board, color, problem, time_budget=2.0, tt=None, max_depth=20):
+	"""Live-play wrapper: iterative-deepening alphabeta capped by wall-clock budget.
+
+	Returns (score, move_xy) — score from problem.player's perspective:
+	+1 = problem.player achieves goal, -1 = fails, 0 = unresolved at depth reached.
+
+	Iterates depth 2, 4, 6, ... and stops when:
+	  - the just-finished iteration produced a proven win/loss (score ±1),
+	  - elapsed time exceeds `time_budget`, OR
+	  - the next iteration is predicted to overshoot the remaining budget
+	    (using last iteration's time × 4 as the growth estimate — alpha-beta
+	    branching is roughly that bad in the worst case for this problem set).
+
+	`tt` is a session-shared dict; reuse it across calls for cumulative speedup."""
+	import time as _time
+	if tt is None:
+		tt = {}
+	tcolor = target_color(problem)
+	target_globals = [reg.parse_global(t) for t in problem.target]
+	start = _time.monotonic()
+	best_s, best_m = 0, None
+	last_iter = 0.0
+	for d in range(2, max_depth + 1, 2):
+		elapsed = _time.monotonic() - start
+		remaining = time_budget - elapsed
+		if remaining <= 0:
+			break
+		if last_iter > 0 and last_iter * 4 > remaining:
+			break
+		t0 = _time.monotonic()
+		s, m = alphabeta(board, color, problem, target_globals,
+			d, -INF, INF, tt=tt, tcolor=tcolor)
+		last_iter = _time.monotonic() - t0
+		if m is not None:
+			best_s, best_m = s, m
+		if s in (1, -1):
+			break
+	return best_s, best_m
+
+
 def solve(problem, depth=DEFAULT_DEPTH, iterative=True):
 	board = problem.initial_board()
 	target_globals = [reg.parse_global(t) for t in problem.target]

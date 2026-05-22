@@ -1,8 +1,16 @@
-"""Interactive tsumego play loop driven by the pre-stored response tree."""
+"""Interactive tsumego play loop with on-the-fly solver responses.
+
+No pre-stored response tree: after each player move, the solver picks the
+opponent's best reply and a verdict (still winning / uncertain / refuted)."""
 
 from . import board as bd
 from . import region as reg
 from . import database
+from . import solver
+from . import mcts
+
+
+LIVE_BUDGET = 2.0  # seconds per opponent reply
 
 
 def render_view(board, region):
@@ -67,11 +75,14 @@ def _global_to_view_str(coord_global, region):
 	return reg.format_local(*vw)
 
 
-def play_problem(problem):
+def play_problem(problem, time_budget=LIVE_BUDGET):
 	board = problem.initial_board()
 	region = problem.region
 	player_color = problem.player
 	opp_color = bd.opponent(player_color)
+	tcolor = solver.target_color(problem)
+	target_globals = [reg.parse_global(t) for t in problem.target]
+	tt = {}
 	you = "black/X" if player_color == bd.BLACK else "white/O"
 
 	print()
@@ -84,7 +95,6 @@ def play_problem(problem):
 	print()
 	print(render_view(board, region))
 
-	node = {"branches": problem.tree}
 	while True:
 		raw = input("\nYour move (e.g. C5; 'show', '?', 'q'): ").strip().lower()
 		if raw in ("q", "quit", "exit"):
@@ -112,36 +122,51 @@ def play_problem(problem):
 			print("  illegal move (occupied, suicide, or ko). try again.")
 			continue
 
-		move_global = reg.format_global(gr, gc)
-		branches = node.get("branches", {}) or {}
 		print(render_view(board, region))
-		if move_global not in branches:
-			print("\n  This move is not in the problem database - treated as off-book.")
-			print("  Likely incorrect or unexplored. Add a branch in the json to handle it.")
+
+		eval_now = solver.evaluate(board, problem, target_globals, tcolor)
+		if eval_now == 1:
+			print("\n  OK Problem solved.")
+			return
+		if eval_now == -1:
+			print("\n  X Goal already failed.")
 			return
 
-		entry = branches[move_global]
-		mark = "OK" if entry.get("correct") else "X "
-		print(f"\n  {mark} {entry.get('comment', '')}")
+		print("\n  (engine thinking...)")
+		score, opp_xy = mcts.best_move(board, opp_color, problem, time_budget=time_budget, tt=tt)
+		mark = {1: "OK", 0: "? ", -1: "X "}[score]
+		verdict = {
+			1: "still winning.",
+			0: "uncertain within solver depth.",
+			-1: "this move loses; opponent refutes.",
+		}[score]
+		print(f"  {mark} {verdict}")
 
-		reply = entry.get("reply")
-		if reply:
-			rr, rc = reg.parse_global(reply)
-			ok2, _ = board.play(rr, rc, opp_color)
-			if not ok2:
-				print(f"  warning: stored reply {reply} is illegal - stopping.")
-				return
-			print(f"\n  Opponent plays {_global_to_view_str(reply, region)}.")
-			print(render_view(board, region))
-
-		next_branches = entry.get("branches") or {}
-		if not next_branches:
-			if entry.get("correct"):
-				print("\n  Problem solved.")
+		if opp_xy is None:
+			eval_after = solver.evaluate(board, problem, target_globals, tcolor)
+			if eval_after == 1:
+				print("\n  OK Problem solved (opponent has no legal reply).")
+			elif eval_after == -1:
+				print("\n  X Lost.")
 			else:
-				print("\n  End of variation - try a different first move.")
+				print("\n  Opponent has no candidate move — position stable, stopping.")
 			return
-		node = entry
+
+		ok2, _ = board.play(opp_xy[0], opp_xy[1], opp_color)
+		if not ok2:
+			print(f"  warning: solver suggested {reg.format_global(*opp_xy)}, illegal — stopping.")
+			return
+		opp_global = reg.format_global(*opp_xy)
+		print(f"  Opponent plays {_global_to_view_str(opp_global, region)}.")
+		print(render_view(board, region))
+
+		eval_after = solver.evaluate(board, problem, target_globals, tcolor)
+		if eval_after == 1:
+			print("\n  OK Problem solved.")
+			return
+		if eval_after == -1:
+			print("\n  X Lost.")
+			return
 
 
 def main(args):

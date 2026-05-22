@@ -26,7 +26,7 @@ if [ "$mode" = "cli" ]; then
 	exec python -m src.main play ${passthrough[@]+"${passthrough[@]}"}
 fi
 
-if ! python -c "import pygame" 2>/dev/null; then
+if ! python -c "import pygame" >/dev/null 2>&1; then
 	echo "pygame-ce is not installed. Run ./setup.sh to install it, or pass --cli." >&2
 	exit 1
 fi

@@ -1,7 +1,7 @@
 """Pygame-ce interactive UI for tsumego play.
 
-Renders the 11x11 region view, accepts mouse clicks for moves, and walks the
-problem's pre-stored response tree (same logic as src/play.py).
+Renders the 11x11 region view, accepts mouse clicks for moves, and uses the
+solver on-the-fly to pick the opponent's best reply (same logic as src/play.py).
 """
 
 import json
@@ -11,6 +11,11 @@ import pygame
 from . import board as bd
 from . import region as reg
 from . import database
+from . import solver
+from . import mcts
+
+
+LIVE_BUDGET = 2.0  # seconds per opponent reply
 
 
 CELL = 60
@@ -373,10 +378,12 @@ def play_screen(screen, clock, problem):
 	(off_r, off_c), _ = reg.region_bounds(region)
 	player_color = problem.player
 	opp_color = bd.opponent(player_color)
+	tcolor = solver.target_color(problem)
+	target_globals = [reg.parse_global(t) for t in problem.target]
 
 	state = {
 		"board": problem.initial_board(),
-		"node": {"branches": problem.tree},
+		"tt": {},
 		"last_move": None,
 		"finished": False,
 		"messages": [],
@@ -389,7 +396,7 @@ def play_screen(screen, clock, problem):
 
 	def reset():
 		state["board"] = problem.initial_board()
-		state["node"] = {"branches": problem.tree}
+		state["tt"] = {}
 		state["last_move"] = None
 		state["finished"] = False
 		state["messages"] = []
@@ -443,37 +450,61 @@ def play_screen(screen, clock, problem):
 					status(f"{local_label}: illegal (occupied, suicide, or ko).", BAD)
 					continue
 				state["last_move"] = coord_global
-				branches = (state["node"].get("branches") or {})
-				if coord_global not in branches:
-					status(f"{local_label}: off-book — add a branch in the JSON to handle this.", BAD)
+
+				eval_now = solver.evaluate(state["board"], problem, target_globals, tcolor)
+				if eval_now == 1:
+					status(f"{local_label}: OK problem solved.", GOOD)
 					state["finished"] = True
 					continue
-				entry = branches[coord_global]
-				ok_flag = bool(entry.get("correct"))
-				mark = "OK" if ok_flag else "X "
-				status(f"{local_label}: {mark} {entry.get('comment','')}", GOOD if ok_flag else BAD)
-				reply = entry.get("reply")
-				if reply:
-					rr, rc = reg.parse_global(reply)
-					ok2, _ = state["board"].play(rr, rc, opp_color)
-					if ok2:
-						state["last_move"] = reply
-						vw = reg.global_to_view(reply, region)
-						reply_label = reg.format_local(*vw) if vw is not None else reply
-						status(f"Opponent plays {reply_label}.", MUTED)
-					else:
-						status(f"Stored reply {reply} is illegal — stopping.", BAD)
-						state["finished"] = True
-						continue
-				next_branches = entry.get("branches") or {}
-				if not next_branches:
-					if ok_flag:
-						status("Problem solved.", GOOD)
-					else:
-						status("End of variation. Reset and try a different move.", BAD)
+				if eval_now == -1:
+					status(f"{local_label}: X goal failed.", BAD)
 					state["finished"] = True
-				else:
-					state["node"] = entry
+					continue
+
+				# MCTS blocks the event loop for up to LIVE_BUDGET seconds.
+				# Revisit with threading if even that becomes noticeable.
+				score, opp_xy = mcts.best_move(
+					state["board"], opp_color, problem,
+					time_budget=LIVE_BUDGET, tt=state["tt"],
+				)
+				mark = {1: "OK", 0: "?", -1: "X"}[score]
+				verdict = {
+					1: "still winning",
+					0: "uncertain at this depth",
+					-1: "this move loses",
+				}[score]
+				msg_color = GOOD if score == 1 else (BAD if score == -1 else MUTED)
+				status(f"{local_label}: {mark} {verdict}.", msg_color)
+
+				if opp_xy is None:
+					eval_after = solver.evaluate(state["board"], problem, target_globals, tcolor)
+					if eval_after == 1:
+						status("Problem solved (opponent has no reply).", GOOD)
+					elif eval_after == -1:
+						status("Lost.", BAD)
+					else:
+						status("Opponent has no candidate move — stopping.", MUTED)
+					state["finished"] = True
+					continue
+
+				ok2, _ = state["board"].play(opp_xy[0], opp_xy[1], opp_color)
+				if not ok2:
+					status(f"Solver gave illegal move {reg.format_global(*opp_xy)} — stopping.", BAD)
+					state["finished"] = True
+					continue
+				opp_global = reg.format_global(*opp_xy)
+				state["last_move"] = opp_global
+				vw = reg.global_to_view(opp_global, region)
+				opp_label = reg.format_local(*vw) if vw is not None else opp_global
+				status(f"Opponent plays {opp_label}.", MUTED)
+
+				eval_after = solver.evaluate(state["board"], problem, target_globals, tcolor)
+				if eval_after == 1:
+					status("Problem solved.", GOOD)
+					state["finished"] = True
+				elif eval_after == -1:
+					status("Lost.", BAD)
+					state["finished"] = True
 
 		# Render
 		screen.fill(SIDEBAR_BG)
@@ -484,10 +515,9 @@ def play_screen(screen, clock, problem):
 			mp = pygame.mouse.get_pos()
 			hover_xy = screen_to_view(*mp)
 
-		candidates = list((state["node"].get("branches") or {}).keys()) if not state["finished"] else None
 		draw_board(screen, state["board"], region,
 			last_move=state["last_move"],
-			candidates=candidates,
+			candidates=None,
 			hover_xy=hover_xy,
 			hover_color=player_color if not state["finished"] else None,
 		)
