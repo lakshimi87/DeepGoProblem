@@ -60,7 +60,10 @@ def _load_policy():
 		from . import neural
 		model = neural.build_model()
 		state = torch.load(ckpt, map_location="cpu", weights_only=True)
-		model.load_state_dict(state)
+		# strict=False: tolerates older checkpoints that predate the value head —
+		# solver only reads the policy output here, so a randomly-initialised value
+		# head is harmless until self-play training overwrites it.
+		model.load_state_dict(state, strict=False)
 		model.eval()
 	except Exception:
 		_POLICY = False
@@ -94,8 +97,8 @@ def policy_score_map(board, color, region):
 		return {}
 	with torch.no_grad():
 		t = neural.board_to_tensor(board, region, color).unsqueeze(0)
-		logits = model(t)[0]
-		probs = torch.softmax(logits, dim=-1).tolist()
+		policy_logits, _ = model(t)
+		probs = torch.softmax(policy_logits[0], dim=-1).tolist()
 	out = {}
 	for idx, p in enumerate(probs):
 		coord = neural.index_to_move(idx, region)
